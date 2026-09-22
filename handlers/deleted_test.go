@@ -177,3 +177,36 @@ func TestDeletedAtDrivesResurrection(t *testing.T) {
 		t.Errorf("after the resurrection the deleted list is %v / %v, want empty", body.ScoreIDs, body.DeletedScores)
 	}
 }
+
+func TestDeletedPracticeRecordsReportDeletedAt(t *testing.T) {
+	ctx, q, h := setupHandler(t)
+
+	w := request(t, h, http.MethodPost, "/api/practice/record/record-1", newPracticeRecordRequest(time.Unix(1000, 0)))
+	if w.Code != http.StatusOK {
+		t.Fatalf("upsert returned %d: %s", w.Code, w.Body.String())
+	}
+	w = request(t, h, http.MethodDelete, "/api/practice/record/record-1", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("delete returned %d: %s", w.Code, w.Body.String())
+	}
+	w = request(t, h, http.MethodDelete, "/api/practice/record/record-1", nil)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("second delete returned %d, want 404", w.Code)
+	}
+	marker, err := q.FindDeletedPracticeRecordMarker(ctx, database.FindDeletedPracticeRecordMarkerParams{User: testUser, RecordID: "record-1"})
+	if err != nil {
+		t.Fatalf("find deleted practice record marker: %s", err)
+	}
+
+	w = request(t, h, http.MethodGet, "/api/practice/record/deleted", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("deleted practice records returned %d: %s", w.Code, w.Body.String())
+	}
+	body := decodeResponse[deletedResponse](t, w)
+	if len(body.Deleted) != 1 || body.Deleted[0].ID != "record-1" {
+		t.Fatalf("deleted practice records are %v, want one entry for record-1", body.Deleted)
+	}
+	if !body.Deleted[0].DeletedAt.Equal(marker.DeletedAt) {
+		t.Errorf("deleted[0].deletedAt is %s, want %s", body.Deleted[0].DeletedAt, marker.DeletedAt)
+	}
+}

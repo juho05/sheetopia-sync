@@ -341,6 +341,55 @@ func TestResurrectSetlist(t *testing.T) {
 	}
 }
 
+func TestResurrectPracticeRecord(t *testing.T) {
+	ctx, q, h := setupHandler(t)
+
+	w := request(t, h, http.MethodPost, "/api/practice/record/record-1", newPracticeRecordRequest(time.Unix(1000, 0)))
+	if w.Code != http.StatusOK {
+		t.Fatalf("initial upsert returned %d: %s", w.Code, w.Body.String())
+	}
+	w = request(t, h, http.MethodDelete, "/api/practice/record/record-1", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("delete returned %d: %s", w.Code, w.Body.String())
+	}
+	marker, err := q.FindDeletedPracticeRecordMarker(ctx, database.FindDeletedPracticeRecordMarkerParams{
+		User:     testUser,
+		RecordID: "record-1",
+	})
+	if err != nil {
+		t.Fatalf("find deleted practice record marker: %s", err)
+	}
+
+	req := newPracticeRecordRequest(time.Unix(2000, 0))
+	w = request(t, h, http.MethodPost, "/api/practice/record/record-1", req)
+	if w.Code != http.StatusConflict {
+		t.Fatalf("write without writtenAt returned %d, want 409: %s", w.Code, w.Body.String())
+	}
+
+	req.WrittenAt = ptr(marker.DeletedAt.Add(-time.Hour))
+	w = request(t, h, http.MethodPost, "/api/practice/record/record-1", req)
+	if w.Code != http.StatusConflict {
+		t.Fatalf("stale write returned %d, want 409: %s", w.Code, w.Body.String())
+	}
+
+	req.WrittenAt = ptr(marker.DeletedAt.Add(time.Hour))
+	w = request(t, h, http.MethodPost, "/api/practice/record/record-1", req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("resurrection returned %d, want 200: %s", w.Code, w.Body.String())
+	}
+	_, err = q.FindDeletedPracticeRecordMarker(ctx, database.FindDeletedPracticeRecordMarkerParams{
+		User:     testUser,
+		RecordID: "record-1",
+	})
+	if !errors.Is(err, sql.ErrNoRows) {
+		t.Errorf("marker survived the resurrection: %v", err)
+	}
+	_, err = q.FindPracticeRecord(ctx, database.FindPracticeRecordParams{User: testUser, ID: "record-1"})
+	if err != nil {
+		t.Errorf("find resurrected practice record: %s", err)
+	}
+}
+
 // clients before API 0.3 do not send writtenAt and cannot complete a resurrection, so for them the
 // deletion keeps winning like it did before resurrection existed, no matter how new the content is
 func TestWriteWithoutWrittenAtNeverResurrects(t *testing.T) {

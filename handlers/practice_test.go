@@ -36,14 +36,13 @@ type practiceRoutineRequest struct {
 	WrittenAt *time.Time             `json:"writtenAt,omitempty"`
 }
 
-type practiceSessionRequest struct {
-	StartedAt time.Time              `json:"startedAt"`
-	EndedAt   *time.Time             `json:"endedAt"`
-	RoutineID *string                `json:"routineId"`
-	Metadata  json.RawMessage        `json:"metadata"`
-	Entries   []practiceSessionEntry `json:"entries"`
-	UpdatedAt time.Time              `json:"updatedAt"`
-	WrittenAt *time.Time             `json:"writtenAt,omitempty"`
+type practiceRecordRequest struct {
+	ExerciseID     string          `json:"exerciseId"`
+	RoutineID      *string         `json:"routineId"`
+	RoutineEntryID *string         `json:"routineEntryId"`
+	Metadata       json.RawMessage `json:"metadata"`
+	UpdatedAt      time.Time       `json:"updatedAt"`
+	WrittenAt      *time.Time      `json:"writtenAt,omitempty"`
 }
 
 type deletedResponse struct {
@@ -336,103 +335,123 @@ func TestPracticeRoutineEntryOfAnotherRoutineIsRejected(t *testing.T) {
 	}
 }
 
-func TestPracticeSessionEntryOfAnotherSessionIsRejected(t *testing.T) {
-	_, _, h := setupHandler(t)
-
-	entry := practiceSessionEntry{ID: "entry-1", ExerciseID: "exercise-1", Metadata: json.RawMessage(`{}`)}
-	w := request(t, h, http.MethodPost, "/api/practice/session/session-1", practiceSessionRequest{
-		StartedAt: time.Unix(1000, 0),
-		Metadata:  json.RawMessage(`{}`),
-		Entries:   []practiceSessionEntry{entry},
-		UpdatedAt: time.Unix(1000, 0),
-	})
-	if w.Code != http.StatusOK {
-		t.Fatalf("upsert returned %d: %s", w.Code, w.Body.String())
-	}
-
-	w = request(t, h, http.MethodPost, "/api/practice/session/session-2", practiceSessionRequest{
-		StartedAt: time.Unix(2000, 0),
-		Metadata:  json.RawMessage(`{}`),
-		Entries:   []practiceSessionEntry{entry},
-		UpdatedAt: time.Unix(2000, 0),
-	})
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("stealing an entry returned %d, want 400", w.Code)
-	}
-
-	w = request(t, h, http.MethodGet, "/api/practice/session/session-1", nil)
-	if w.Code != http.StatusOK {
-		t.Fatalf("get session returned %d: %s", w.Code, w.Body.String())
-	}
-	session := decodeResponse[practiceSessionResponse](t, w)
-	if len(session.Entries) != 1 || session.Entries[0].ID != "entry-1" {
-		t.Errorf("session-1 entries are %+v, want entry-1", session.Entries)
+func newPracticeRecordRequest(updatedAt time.Time) practiceRecordRequest {
+	return practiceRecordRequest{
+		ExerciseID: "exercise-1",
+		Metadata:   json.RawMessage(`{"duration":1000,"startedAt":"2026-09-22T10:00:00Z"}`),
+		UpdatedAt:  updatedAt,
 	}
 }
 
-func TestPracticeSessionRoundTrip(t *testing.T) {
+func TestPracticeRecordRoundTrip(t *testing.T) {
 	_, _, h := setupHandler(t)
 
-	endedAt := time.Unix(3000, 0).UTC()
 	routineID := "routine-1"
 	entryID := "routine-entry-1"
-	w := request(t, h, http.MethodPost, "/api/practice/session/session-1", practiceSessionRequest{
-		StartedAt: time.Unix(2000, 0).UTC(),
-		EndedAt:   &endedAt,
-		RoutineID: &routineID,
-		Metadata:  json.RawMessage(`{"description":"evening"}`),
-		Entries: []practiceSessionEntry{
-			{ID: "session-entry-1", ExerciseID: "exercise-1", RoutineEntryID: &entryID, Metadata: json.RawMessage(`{"duration":1000}`)},
-		},
-		UpdatedAt: time.Unix(3000, 0),
-	})
+	req := newPracticeRecordRequest(time.Unix(3000, 0))
+	req.RoutineID = &routineID
+	req.RoutineEntryID = &entryID
+	w := request(t, h, http.MethodPost, "/api/practice/record/record-1", req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("upsert returned %d: %s", w.Code, w.Body.String())
 	}
 
-	w = request(t, h, http.MethodGet, "/api/practice/session/session-1", nil)
+	w = request(t, h, http.MethodGet, "/api/practice/record/record-1", nil)
 	if w.Code != http.StatusOK {
-		t.Fatalf("get session returned %d: %s", w.Code, w.Body.String())
+		t.Fatalf("get record returned %d: %s", w.Code, w.Body.String())
 	}
-	session := decodeResponse[practiceSessionResponse](t, w)
-	if !session.StartedAt.Equal(time.Unix(2000, 0)) {
-		t.Errorf("session startedAt is %s", session.StartedAt)
+	record := decodeResponse[practiceRecordResponse](t, w)
+	if record.ExerciseID != "exercise-1" {
+		t.Errorf("record exerciseId is %q", record.ExerciseID)
 	}
-	if session.EndedAt == nil || !session.EndedAt.Equal(endedAt) {
-		t.Errorf("session endedAt is %v, want %s", session.EndedAt, endedAt)
+	if record.RoutineID == nil || *record.RoutineID != routineID {
+		t.Errorf("record routineId is %v, want %s", record.RoutineID, routineID)
 	}
-	if session.RoutineID == nil || *session.RoutineID != routineID {
-		t.Errorf("session routineId is %v, want %s", session.RoutineID, routineID)
+	if record.RoutineEntryID == nil || *record.RoutineEntryID != entryID {
+		t.Errorf("record routineEntryId is %v, want %s", record.RoutineEntryID, entryID)
 	}
-	if len(session.Entries) != 1 {
-		t.Fatalf("session entries are %+v, want one entry", session.Entries)
+	if !strings.Contains(string(record.Metadata), `"duration":1000`) {
+		t.Errorf("record metadata is %s", record.Metadata)
 	}
-	if session.Entries[0].RoutineEntryID == nil || *session.Entries[0].RoutineEntryID != entryID {
-		t.Errorf("session entry routineEntryId is %v, want %s", session.Entries[0].RoutineEntryID, entryID)
+	if !record.UpdatedAt.Equal(time.Unix(3000, 0)) {
+		t.Errorf("record updatedAt is %s", record.UpdatedAt)
 	}
 
-	// a session that was never finished keeps its open end
-	w = request(t, h, http.MethodPost, "/api/practice/session/session-2", practiceSessionRequest{
-		StartedAt: time.Unix(2000, 0).UTC(),
-		Metadata:  json.RawMessage(`{}`),
-		UpdatedAt: time.Unix(3000, 0),
-	})
+	// a record practiced outside a routine has no routine
+	w = request(t, h, http.MethodPost, "/api/practice/record/record-2", newPracticeRecordRequest(time.Unix(3000, 0)))
 	if w.Code != http.StatusOK {
-		t.Fatalf("upsert of an open session returned %d: %s", w.Code, w.Body.String())
+		t.Fatalf("upsert of an ad hoc record returned %d: %s", w.Code, w.Body.String())
 	}
-	w = request(t, h, http.MethodGet, "/api/practice/session/session-2", nil)
+	w = request(t, h, http.MethodGet, "/api/practice/record", nil)
 	if w.Code != http.StatusOK {
-		t.Fatalf("get open session returned %d: %s", w.Code, w.Body.String())
+		t.Fatalf("get records returned %d: %s", w.Code, w.Body.String())
 	}
-	session = decodeResponse[practiceSessionResponse](t, w)
-	if session.EndedAt != nil {
-		t.Errorf("open session reported endedAt %s", session.EndedAt)
+	body := decodeResponse[struct {
+		Records []practiceRecordResponse `json:"records"`
+	}](t, w)
+	if len(body.Records) != 2 || body.Records[1].ID != "record-2" {
+		t.Fatalf("records are %+v, want record-1 and record-2", body.Records)
 	}
-	if session.RoutineID != nil {
-		t.Errorf("session without a routine reported routineId %s", *session.RoutineID)
+	if body.Records[1].RoutineID != nil || body.Records[1].RoutineEntryID != nil {
+		t.Errorf("ad hoc record reported a routine: %+v", body.Records[1])
 	}
-	if len(session.Entries) != 0 {
-		t.Errorf("session without entries reported %+v", session.Entries)
+}
+
+func TestPracticeRecordWithoutExerciseIsRejected(t *testing.T) {
+	_, _, h := setupHandler(t)
+
+	req := newPracticeRecordRequest(time.Unix(1000, 0))
+	req.ExerciseID = ""
+	w := request(t, h, http.MethodPost, "/api/practice/record/record-1", req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("upsert without exerciseId returned %d, want 400", w.Code)
+	}
+}
+
+func TestStalePracticeRecordUpdateIsRejected(t *testing.T) {
+	_, _, h := setupHandler(t)
+
+	w := request(t, h, http.MethodPost, "/api/practice/record/record-1", newPracticeRecordRequest(time.Unix(2000, 0)))
+	if w.Code != http.StatusOK {
+		t.Fatalf("upsert returned %d: %s", w.Code, w.Body.String())
+	}
+
+	stale := newPracticeRecordRequest(time.Unix(1000, 0))
+	stale.Metadata = json.RawMessage(`{"duration":5}`)
+	w = request(t, h, http.MethodPost, "/api/practice/record/record-1", stale)
+	if w.Code != http.StatusConflict {
+		t.Fatalf("stale upsert returned %d, want 409", w.Code)
+	}
+
+	w = request(t, h, http.MethodGet, "/api/practice/record/record-1", nil)
+	record := decodeResponse[practiceRecordResponse](t, w)
+	if !strings.Contains(string(record.Metadata), `"duration":1000`) {
+		t.Errorf("stale upsert changed the metadata to %s", record.Metadata)
+	}
+}
+
+func TestPracticeSessionStubsKeepOldAppsSyncing(t *testing.T) {
+	_, _, h := setupHandler(t)
+
+	w := request(t, h, http.MethodGet, "/api/practice/session", nil)
+	if w.Code != http.StatusOK || strings.TrimSpace(w.Body.String()) != `{"sessions":[]}` {
+		t.Errorf("get sessions returned %d: %s", w.Code, w.Body.String())
+	}
+	w = request(t, h, http.MethodGet, "/api/practice/session/deleted", nil)
+	if w.Code != http.StatusOK || strings.TrimSpace(w.Body.String()) != `{"deleted":[]}` {
+		t.Errorf("get deleted sessions returned %d: %s", w.Code, w.Body.String())
+	}
+	w = request(t, h, http.MethodPost, "/api/practice/session/session-1", map[string]any{"startedAt": time.Now()})
+	if w.Code != http.StatusOK {
+		t.Errorf("post session returned %d: %s", w.Code, w.Body.String())
+	}
+	w = request(t, h, http.MethodGet, "/api/practice/session/session-1", nil)
+	if w.Code != http.StatusNotFound {
+		t.Errorf("get session returned %d, want 404", w.Code)
+	}
+	w = request(t, h, http.MethodDelete, "/api/practice/session/session-1", nil)
+	if w.Code != http.StatusNotFound {
+		t.Errorf("delete session returned %d, want 404", w.Code)
 	}
 }
 

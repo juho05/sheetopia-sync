@@ -118,44 +118,27 @@ SELECT practice_routine_entries.* FROM practice_routine_entries
 JOIN practice_routines ON practice_routines.user = practice_routine_entries.user AND practice_routines.id = practice_routine_entries.routine_id
 WHERE practice_routines.user = ? AND practice_routines.changed > ? ORDER BY practice_routine_entries.position;
 
--- name: FindPracticeSession :one
-SELECT * FROM practice_sessions WHERE user = ? AND id = ?;
+-- name: FindPracticeRecord :one
+SELECT * FROM practice_records WHERE user = ? AND id = ?;
 
--- name: FindPracticeSessionsChangedAfter :many
-SELECT * FROM practice_sessions WHERE user = ? AND changed > ? ORDER BY id;
+-- name: FindPracticeRecordsChangedAfter :many
+SELECT * FROM practice_records WHERE user = ? AND changed > ? ORDER BY id;
 
--- name: UpsertPracticeSession :exec
-INSERT INTO practice_sessions (id, user, updated_at, started_at, ended_at, routine_id, metadata_json, changed) VALUES (?, ?, ?, ?, ?, ?, ?, unixepoch())
-ON CONFLICT (user, id) DO UPDATE SET updated_at = excluded.updated_at, started_at = excluded.started_at, ended_at = excluded.ended_at, routine_id = excluded.routine_id, metadata_json = excluded.metadata_json, changed = excluded.changed;
+-- name: UpsertPracticeRecord :exec
+INSERT INTO practice_records (id, user, updated_at, exercise_id, routine_id, routine_entry_id, metadata_json, changed) VALUES (?, ?, ?, ?, ?, ?, ?, unixepoch())
+ON CONFLICT (user, id) DO UPDATE SET updated_at = excluded.updated_at, exercise_id = excluded.exercise_id, routine_id = excluded.routine_id, routine_entry_id = excluded.routine_entry_id, metadata_json = excluded.metadata_json, changed = excluded.changed;
 
--- name: DeletePracticeSession :execresult
-DELETE FROM practice_sessions WHERE user = ? AND id = ?;
+-- name: DeletePracticeRecord :execresult
+DELETE FROM practice_records WHERE user = ? AND id = ?;
 
--- name: FindDeletedPracticeSessionMarker :one
-SELECT * FROM deleted_practice_sessions WHERE user = ? AND session_id = ?;
+-- name: FindDeletedPracticeRecordMarker :one
+SELECT * FROM deleted_practice_records WHERE user = ? AND record_id = ?;
 
--- name: FindDeletedPracticeSessionsSince :many
-SELECT session_id, deleted_at FROM deleted_practice_sessions WHERE user = ? AND deleted_at > ?;
+-- name: FindDeletedPracticeRecordsSince :many
+SELECT record_id, deleted_at FROM deleted_practice_records WHERE user = ? AND deleted_at > ?;
 
--- name: CreateDeletedPracticeSessionMarker :exec
-INSERT INTO deleted_practice_sessions (session_id, user, deleted_at) VALUES (?, ?, unixepoch());
+-- name: CreateDeletedPracticeRecordMarker :exec
+INSERT INTO deleted_practice_records (record_id, user, deleted_at) VALUES (?, ?, unixepoch());
 
--- name: DeleteDeletedPracticeSessionMarker :exec
-DELETE FROM deleted_practice_sessions WHERE user = ? AND session_id = ?;
-
--- name: RemoveAllPracticeSessionEntries :exec
-DELETE FROM practice_session_entries WHERE user = ? AND session_id = ?;
-
--- name: FindPracticeSessionEntry :one
-SELECT * FROM practice_session_entries WHERE user = ? AND id = ?;
-
--- name: AddPracticeSessionEntry :exec
-INSERT INTO practice_session_entries (user, id, session_id, exercise_id, routine_entry_id, metadata_json) VALUES (?, ?, ?, ?, ?, ?);
-
--- name: GetPracticeSessionEntries :many
-SELECT * FROM practice_session_entries WHERE user = ? AND session_id = ? ORDER BY id;
-
--- name: FindPracticeSessionEntriesChangedAfter :many
-SELECT practice_session_entries.* FROM practice_session_entries
-JOIN practice_sessions ON practice_sessions.user = practice_session_entries.user AND practice_sessions.id = practice_session_entries.session_id
-WHERE practice_sessions.user = ? AND practice_sessions.changed > ? ORDER BY practice_session_entries.id;
+-- name: DeleteDeletedPracticeRecordMarker :exec
+DELETE FROM deleted_practice_records WHERE user = ? AND record_id = ?;

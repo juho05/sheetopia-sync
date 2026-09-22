@@ -57,31 +57,6 @@ func (q *Queries) AddPracticeRoutineEntry(ctx context.Context, arg AddPracticeRo
 	return err
 }
 
-const addPracticeSessionEntry = `-- name: AddPracticeSessionEntry :exec
-INSERT INTO practice_session_entries (user, id, session_id, exercise_id, routine_entry_id, metadata_json) VALUES (?, ?, ?, ?, ?, ?)
-`
-
-type AddPracticeSessionEntryParams struct {
-	User           string
-	ID             string
-	SessionID      string
-	ExerciseID     string
-	RoutineEntryID sql.NullString
-	MetadataJson   []byte
-}
-
-func (q *Queries) AddPracticeSessionEntry(ctx context.Context, arg AddPracticeSessionEntryParams) error {
-	_, err := q.db.ExecContext(ctx, addPracticeSessionEntry,
-		arg.User,
-		arg.ID,
-		arg.SessionID,
-		arg.ExerciseID,
-		arg.RoutineEntryID,
-		arg.MetadataJson,
-	)
-	return err
-}
-
 const assignExerciseTag = `-- name: AssignExerciseTag :exec
 INSERT INTO exercise_tags (user, exercise_id, tag_id) VALUES (?, ?, ?) ON CONFLICT (user, exercise_id, tag_id) DO NOTHING
 `
@@ -125,6 +100,20 @@ func (q *Queries) CreateDeletedExerciseMarker(ctx context.Context, arg CreateDel
 	return err
 }
 
+const createDeletedPracticeRecordMarker = `-- name: CreateDeletedPracticeRecordMarker :exec
+INSERT INTO deleted_practice_records (record_id, user, deleted_at) VALUES (?, ?, unixepoch())
+`
+
+type CreateDeletedPracticeRecordMarkerParams struct {
+	RecordID string
+	User     string
+}
+
+func (q *Queries) CreateDeletedPracticeRecordMarker(ctx context.Context, arg CreateDeletedPracticeRecordMarkerParams) error {
+	_, err := q.db.ExecContext(ctx, createDeletedPracticeRecordMarker, arg.RecordID, arg.User)
+	return err
+}
+
 const createDeletedPracticeRoutineMarker = `-- name: CreateDeletedPracticeRoutineMarker :exec
 INSERT INTO deleted_practice_routines (routine_id, user, deleted_at) VALUES (?, ?, unixepoch())
 `
@@ -136,20 +125,6 @@ type CreateDeletedPracticeRoutineMarkerParams struct {
 
 func (q *Queries) CreateDeletedPracticeRoutineMarker(ctx context.Context, arg CreateDeletedPracticeRoutineMarkerParams) error {
 	_, err := q.db.ExecContext(ctx, createDeletedPracticeRoutineMarker, arg.RoutineID, arg.User)
-	return err
-}
-
-const createDeletedPracticeSessionMarker = `-- name: CreateDeletedPracticeSessionMarker :exec
-INSERT INTO deleted_practice_sessions (session_id, user, deleted_at) VALUES (?, ?, unixepoch())
-`
-
-type CreateDeletedPracticeSessionMarkerParams struct {
-	SessionID string
-	User      string
-}
-
-func (q *Queries) CreateDeletedPracticeSessionMarker(ctx context.Context, arg CreateDeletedPracticeSessionMarkerParams) error {
-	_, err := q.db.ExecContext(ctx, createDeletedPracticeSessionMarker, arg.SessionID, arg.User)
 	return err
 }
 
@@ -181,6 +156,20 @@ func (q *Queries) DeleteDeletedExerciseMarker(ctx context.Context, arg DeleteDel
 	return err
 }
 
+const deleteDeletedPracticeRecordMarker = `-- name: DeleteDeletedPracticeRecordMarker :exec
+DELETE FROM deleted_practice_records WHERE user = ? AND record_id = ?
+`
+
+type DeleteDeletedPracticeRecordMarkerParams struct {
+	User     string
+	RecordID string
+}
+
+func (q *Queries) DeleteDeletedPracticeRecordMarker(ctx context.Context, arg DeleteDeletedPracticeRecordMarkerParams) error {
+	_, err := q.db.ExecContext(ctx, deleteDeletedPracticeRecordMarker, arg.User, arg.RecordID)
+	return err
+}
+
 const deleteDeletedPracticeRoutineMarker = `-- name: DeleteDeletedPracticeRoutineMarker :exec
 DELETE FROM deleted_practice_routines WHERE user = ? AND routine_id = ?
 `
@@ -192,20 +181,6 @@ type DeleteDeletedPracticeRoutineMarkerParams struct {
 
 func (q *Queries) DeleteDeletedPracticeRoutineMarker(ctx context.Context, arg DeleteDeletedPracticeRoutineMarkerParams) error {
 	_, err := q.db.ExecContext(ctx, deleteDeletedPracticeRoutineMarker, arg.User, arg.RoutineID)
-	return err
-}
-
-const deleteDeletedPracticeSessionMarker = `-- name: DeleteDeletedPracticeSessionMarker :exec
-DELETE FROM deleted_practice_sessions WHERE user = ? AND session_id = ?
-`
-
-type DeleteDeletedPracticeSessionMarkerParams struct {
-	User      string
-	SessionID string
-}
-
-func (q *Queries) DeleteDeletedPracticeSessionMarker(ctx context.Context, arg DeleteDeletedPracticeSessionMarkerParams) error {
-	_, err := q.db.ExecContext(ctx, deleteDeletedPracticeSessionMarker, arg.User, arg.SessionID)
 	return err
 }
 
@@ -235,6 +210,19 @@ func (q *Queries) DeleteExerciseCategory(ctx context.Context, arg DeleteExercise
 	return q.db.ExecContext(ctx, deleteExerciseCategory, arg.User, arg.ID)
 }
 
+const deletePracticeRecord = `-- name: DeletePracticeRecord :execresult
+DELETE FROM practice_records WHERE user = ? AND id = ?
+`
+
+type DeletePracticeRecordParams struct {
+	User string
+	ID   string
+}
+
+func (q *Queries) DeletePracticeRecord(ctx context.Context, arg DeletePracticeRecordParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, deletePracticeRecord, arg.User, arg.ID)
+}
+
 const deletePracticeRoutine = `-- name: DeletePracticeRoutine :execresult
 DELETE FROM practice_routines WHERE user = ? AND id = ?
 `
@@ -246,19 +234,6 @@ type DeletePracticeRoutineParams struct {
 
 func (q *Queries) DeletePracticeRoutine(ctx context.Context, arg DeletePracticeRoutineParams) (sql.Result, error) {
 	return q.db.ExecContext(ctx, deletePracticeRoutine, arg.User, arg.ID)
-}
-
-const deletePracticeSession = `-- name: DeletePracticeSession :execresult
-DELETE FROM practice_sessions WHERE user = ? AND id = ?
-`
-
-type DeletePracticeSessionParams struct {
-	User string
-	ID   string
-}
-
-func (q *Queries) DeletePracticeSession(ctx context.Context, arg DeletePracticeSessionParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, deletePracticeSession, arg.User, arg.ID)
 }
 
 const findDeletedExerciseCategoriesSince = `-- name: FindDeletedExerciseCategoriesSince :many
@@ -367,6 +342,59 @@ func (q *Queries) FindDeletedExercisesSince(ctx context.Context, arg FindDeleted
 	return items, nil
 }
 
+const findDeletedPracticeRecordMarker = `-- name: FindDeletedPracticeRecordMarker :one
+SELECT user, record_id, deleted_at FROM deleted_practice_records WHERE user = ? AND record_id = ?
+`
+
+type FindDeletedPracticeRecordMarkerParams struct {
+	User     string
+	RecordID string
+}
+
+func (q *Queries) FindDeletedPracticeRecordMarker(ctx context.Context, arg FindDeletedPracticeRecordMarkerParams) (DeletedPracticeRecord, error) {
+	row := q.db.QueryRowContext(ctx, findDeletedPracticeRecordMarker, arg.User, arg.RecordID)
+	var i DeletedPracticeRecord
+	err := row.Scan(&i.User, &i.RecordID, &i.DeletedAt)
+	return i, err
+}
+
+const findDeletedPracticeRecordsSince = `-- name: FindDeletedPracticeRecordsSince :many
+SELECT record_id, deleted_at FROM deleted_practice_records WHERE user = ? AND deleted_at > ?
+`
+
+type FindDeletedPracticeRecordsSinceParams struct {
+	User      string
+	DeletedAt time.Time
+}
+
+type FindDeletedPracticeRecordsSinceRow struct {
+	RecordID  string
+	DeletedAt time.Time
+}
+
+func (q *Queries) FindDeletedPracticeRecordsSince(ctx context.Context, arg FindDeletedPracticeRecordsSinceParams) ([]FindDeletedPracticeRecordsSinceRow, error) {
+	rows, err := q.db.QueryContext(ctx, findDeletedPracticeRecordsSince, arg.User, arg.DeletedAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FindDeletedPracticeRecordsSinceRow{}
+	for rows.Next() {
+		var i FindDeletedPracticeRecordsSinceRow
+		if err := rows.Scan(&i.RecordID, &i.DeletedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findDeletedPracticeRoutineMarker = `-- name: FindDeletedPracticeRoutineMarker :one
 SELECT user, routine_id, deleted_at FROM deleted_practice_routines WHERE user = ? AND routine_id = ?
 `
@@ -407,59 +435,6 @@ func (q *Queries) FindDeletedPracticeRoutinesSince(ctx context.Context, arg Find
 	for rows.Next() {
 		var i FindDeletedPracticeRoutinesSinceRow
 		if err := rows.Scan(&i.RoutineID, &i.DeletedAt); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findDeletedPracticeSessionMarker = `-- name: FindDeletedPracticeSessionMarker :one
-SELECT user, session_id, deleted_at FROM deleted_practice_sessions WHERE user = ? AND session_id = ?
-`
-
-type FindDeletedPracticeSessionMarkerParams struct {
-	User      string
-	SessionID string
-}
-
-func (q *Queries) FindDeletedPracticeSessionMarker(ctx context.Context, arg FindDeletedPracticeSessionMarkerParams) (DeletedPracticeSession, error) {
-	row := q.db.QueryRowContext(ctx, findDeletedPracticeSessionMarker, arg.User, arg.SessionID)
-	var i DeletedPracticeSession
-	err := row.Scan(&i.User, &i.SessionID, &i.DeletedAt)
-	return i, err
-}
-
-const findDeletedPracticeSessionsSince = `-- name: FindDeletedPracticeSessionsSince :many
-SELECT session_id, deleted_at FROM deleted_practice_sessions WHERE user = ? AND deleted_at > ?
-`
-
-type FindDeletedPracticeSessionsSinceParams struct {
-	User      string
-	DeletedAt time.Time
-}
-
-type FindDeletedPracticeSessionsSinceRow struct {
-	SessionID string
-	DeletedAt time.Time
-}
-
-func (q *Queries) FindDeletedPracticeSessionsSince(ctx context.Context, arg FindDeletedPracticeSessionsSinceParams) ([]FindDeletedPracticeSessionsSinceRow, error) {
-	rows, err := q.db.QueryContext(ctx, findDeletedPracticeSessionsSince, arg.User, arg.DeletedAt)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []FindDeletedPracticeSessionsSinceRow{}
-	for rows.Next() {
-		var i FindDeletedPracticeSessionsSinceRow
-		if err := rows.Scan(&i.SessionID, &i.DeletedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -677,6 +652,72 @@ func (q *Queries) FindExercisesChangedAfter(ctx context.Context, arg FindExercis
 	return items, nil
 }
 
+const findPracticeRecord = `-- name: FindPracticeRecord :one
+SELECT user, id, updated_at, exercise_id, routine_id, routine_entry_id, metadata_json, changed FROM practice_records WHERE user = ? AND id = ?
+`
+
+type FindPracticeRecordParams struct {
+	User string
+	ID   string
+}
+
+func (q *Queries) FindPracticeRecord(ctx context.Context, arg FindPracticeRecordParams) (PracticeRecord, error) {
+	row := q.db.QueryRowContext(ctx, findPracticeRecord, arg.User, arg.ID)
+	var i PracticeRecord
+	err := row.Scan(
+		&i.User,
+		&i.ID,
+		&i.UpdatedAt,
+		&i.ExerciseID,
+		&i.RoutineID,
+		&i.RoutineEntryID,
+		&i.MetadataJson,
+		&i.Changed,
+	)
+	return i, err
+}
+
+const findPracticeRecordsChangedAfter = `-- name: FindPracticeRecordsChangedAfter :many
+SELECT user, id, updated_at, exercise_id, routine_id, routine_entry_id, metadata_json, changed FROM practice_records WHERE user = ? AND changed > ? ORDER BY id
+`
+
+type FindPracticeRecordsChangedAfterParams struct {
+	User    string
+	Changed time.Time
+}
+
+func (q *Queries) FindPracticeRecordsChangedAfter(ctx context.Context, arg FindPracticeRecordsChangedAfterParams) ([]PracticeRecord, error) {
+	rows, err := q.db.QueryContext(ctx, findPracticeRecordsChangedAfter, arg.User, arg.Changed)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PracticeRecord{}
+	for rows.Next() {
+		var i PracticeRecord
+		if err := rows.Scan(
+			&i.User,
+			&i.ID,
+			&i.UpdatedAt,
+			&i.ExerciseID,
+			&i.RoutineID,
+			&i.RoutineEntryID,
+			&i.MetadataJson,
+			&i.Changed,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const findPracticeRoutine = `-- name: FindPracticeRoutine :one
 SELECT user, id, updated_at, name, metadata_json, changed FROM practice_routines WHERE user = ? AND id = ?
 `
@@ -803,136 +844,6 @@ func (q *Queries) FindPracticeRoutinesChangedAfter(ctx context.Context, arg Find
 	return items, nil
 }
 
-const findPracticeSession = `-- name: FindPracticeSession :one
-SELECT user, id, updated_at, started_at, ended_at, routine_id, metadata_json, changed FROM practice_sessions WHERE user = ? AND id = ?
-`
-
-type FindPracticeSessionParams struct {
-	User string
-	ID   string
-}
-
-func (q *Queries) FindPracticeSession(ctx context.Context, arg FindPracticeSessionParams) (PracticeSession, error) {
-	row := q.db.QueryRowContext(ctx, findPracticeSession, arg.User, arg.ID)
-	var i PracticeSession
-	err := row.Scan(
-		&i.User,
-		&i.ID,
-		&i.UpdatedAt,
-		&i.StartedAt,
-		&i.EndedAt,
-		&i.RoutineID,
-		&i.MetadataJson,
-		&i.Changed,
-	)
-	return i, err
-}
-
-const findPracticeSessionEntriesChangedAfter = `-- name: FindPracticeSessionEntriesChangedAfter :many
-SELECT practice_session_entries.user, practice_session_entries.id, practice_session_entries.session_id, practice_session_entries.exercise_id, practice_session_entries.routine_entry_id, practice_session_entries.metadata_json FROM practice_session_entries
-JOIN practice_sessions ON practice_sessions.user = practice_session_entries.user AND practice_sessions.id = practice_session_entries.session_id
-WHERE practice_sessions.user = ? AND practice_sessions.changed > ? ORDER BY practice_session_entries.id
-`
-
-type FindPracticeSessionEntriesChangedAfterParams struct {
-	User    string
-	Changed time.Time
-}
-
-func (q *Queries) FindPracticeSessionEntriesChangedAfter(ctx context.Context, arg FindPracticeSessionEntriesChangedAfterParams) ([]PracticeSessionEntry, error) {
-	rows, err := q.db.QueryContext(ctx, findPracticeSessionEntriesChangedAfter, arg.User, arg.Changed)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []PracticeSessionEntry{}
-	for rows.Next() {
-		var i PracticeSessionEntry
-		if err := rows.Scan(
-			&i.User,
-			&i.ID,
-			&i.SessionID,
-			&i.ExerciseID,
-			&i.RoutineEntryID,
-			&i.MetadataJson,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const findPracticeSessionEntry = `-- name: FindPracticeSessionEntry :one
-SELECT user, id, session_id, exercise_id, routine_entry_id, metadata_json FROM practice_session_entries WHERE user = ? AND id = ?
-`
-
-type FindPracticeSessionEntryParams struct {
-	User string
-	ID   string
-}
-
-func (q *Queries) FindPracticeSessionEntry(ctx context.Context, arg FindPracticeSessionEntryParams) (PracticeSessionEntry, error) {
-	row := q.db.QueryRowContext(ctx, findPracticeSessionEntry, arg.User, arg.ID)
-	var i PracticeSessionEntry
-	err := row.Scan(
-		&i.User,
-		&i.ID,
-		&i.SessionID,
-		&i.ExerciseID,
-		&i.RoutineEntryID,
-		&i.MetadataJson,
-	)
-	return i, err
-}
-
-const findPracticeSessionsChangedAfter = `-- name: FindPracticeSessionsChangedAfter :many
-SELECT user, id, updated_at, started_at, ended_at, routine_id, metadata_json, changed FROM practice_sessions WHERE user = ? AND changed > ? ORDER BY id
-`
-
-type FindPracticeSessionsChangedAfterParams struct {
-	User    string
-	Changed time.Time
-}
-
-func (q *Queries) FindPracticeSessionsChangedAfter(ctx context.Context, arg FindPracticeSessionsChangedAfterParams) ([]PracticeSession, error) {
-	rows, err := q.db.QueryContext(ctx, findPracticeSessionsChangedAfter, arg.User, arg.Changed)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []PracticeSession{}
-	for rows.Next() {
-		var i PracticeSession
-		if err := rows.Scan(
-			&i.User,
-			&i.ID,
-			&i.UpdatedAt,
-			&i.StartedAt,
-			&i.EndedAt,
-			&i.RoutineID,
-			&i.MetadataJson,
-			&i.Changed,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getExerciseScoreIDs = `-- name: GetExerciseScoreIDs :many
 SELECT score_id FROM exercise_scores WHERE user = ? AND exercise_id = ? ORDER BY position
 `
@@ -1036,45 +947,6 @@ func (q *Queries) GetPracticeRoutineEntries(ctx context.Context, arg GetPractice
 	return items, nil
 }
 
-const getPracticeSessionEntries = `-- name: GetPracticeSessionEntries :many
-SELECT user, id, session_id, exercise_id, routine_entry_id, metadata_json FROM practice_session_entries WHERE user = ? AND session_id = ? ORDER BY id
-`
-
-type GetPracticeSessionEntriesParams struct {
-	User      string
-	SessionID string
-}
-
-func (q *Queries) GetPracticeSessionEntries(ctx context.Context, arg GetPracticeSessionEntriesParams) ([]PracticeSessionEntry, error) {
-	rows, err := q.db.QueryContext(ctx, getPracticeSessionEntries, arg.User, arg.SessionID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []PracticeSessionEntry{}
-	for rows.Next() {
-		var i PracticeSessionEntry
-		if err := rows.Scan(
-			&i.User,
-			&i.ID,
-			&i.SessionID,
-			&i.ExerciseID,
-			&i.RoutineEntryID,
-			&i.MetadataJson,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const removeAllExerciseScores = `-- name: RemoveAllExerciseScores :exec
 DELETE FROM exercise_scores WHERE user = ? AND exercise_id = ?
 `
@@ -1100,20 +972,6 @@ type RemoveAllPracticeRoutineEntriesParams struct {
 
 func (q *Queries) RemoveAllPracticeRoutineEntries(ctx context.Context, arg RemoveAllPracticeRoutineEntriesParams) error {
 	_, err := q.db.ExecContext(ctx, removeAllPracticeRoutineEntries, arg.User, arg.RoutineID)
-	return err
-}
-
-const removeAllPracticeSessionEntries = `-- name: RemoveAllPracticeSessionEntries :exec
-DELETE FROM practice_session_entries WHERE user = ? AND session_id = ?
-`
-
-type RemoveAllPracticeSessionEntriesParams struct {
-	User      string
-	SessionID string
-}
-
-func (q *Queries) RemoveAllPracticeSessionEntries(ctx context.Context, arg RemoveAllPracticeSessionEntriesParams) error {
-	_, err := q.db.ExecContext(ctx, removeAllPracticeSessionEntries, arg.User, arg.SessionID)
 	return err
 }
 
@@ -1181,6 +1039,34 @@ func (q *Queries) UpsertExerciseCategory(ctx context.Context, arg UpsertExercise
 	return err
 }
 
+const upsertPracticeRecord = `-- name: UpsertPracticeRecord :exec
+INSERT INTO practice_records (id, user, updated_at, exercise_id, routine_id, routine_entry_id, metadata_json, changed) VALUES (?, ?, ?, ?, ?, ?, ?, unixepoch())
+ON CONFLICT (user, id) DO UPDATE SET updated_at = excluded.updated_at, exercise_id = excluded.exercise_id, routine_id = excluded.routine_id, routine_entry_id = excluded.routine_entry_id, metadata_json = excluded.metadata_json, changed = excluded.changed
+`
+
+type UpsertPracticeRecordParams struct {
+	ID             string
+	User           string
+	UpdatedAt      time.Time
+	ExerciseID     string
+	RoutineID      sql.NullString
+	RoutineEntryID sql.NullString
+	MetadataJson   []byte
+}
+
+func (q *Queries) UpsertPracticeRecord(ctx context.Context, arg UpsertPracticeRecordParams) error {
+	_, err := q.db.ExecContext(ctx, upsertPracticeRecord,
+		arg.ID,
+		arg.User,
+		arg.UpdatedAt,
+		arg.ExerciseID,
+		arg.RoutineID,
+		arg.RoutineEntryID,
+		arg.MetadataJson,
+	)
+	return err
+}
+
 const upsertPracticeRoutine = `-- name: UpsertPracticeRoutine :exec
 INSERT INTO practice_routines (id, user, updated_at, name, metadata_json, changed) VALUES (?, ?, ?, ?, ?, unixepoch())
 ON CONFLICT (user, id) DO UPDATE SET updated_at = excluded.updated_at, name = excluded.name, metadata_json = excluded.metadata_json, changed = excluded.changed
@@ -1200,34 +1086,6 @@ func (q *Queries) UpsertPracticeRoutine(ctx context.Context, arg UpsertPracticeR
 		arg.User,
 		arg.UpdatedAt,
 		arg.Name,
-		arg.MetadataJson,
-	)
-	return err
-}
-
-const upsertPracticeSession = `-- name: UpsertPracticeSession :exec
-INSERT INTO practice_sessions (id, user, updated_at, started_at, ended_at, routine_id, metadata_json, changed) VALUES (?, ?, ?, ?, ?, ?, ?, unixepoch())
-ON CONFLICT (user, id) DO UPDATE SET updated_at = excluded.updated_at, started_at = excluded.started_at, ended_at = excluded.ended_at, routine_id = excluded.routine_id, metadata_json = excluded.metadata_json, changed = excluded.changed
-`
-
-type UpsertPracticeSessionParams struct {
-	ID           string
-	User         string
-	UpdatedAt    time.Time
-	StartedAt    time.Time
-	EndedAt      sql.NullTime
-	RoutineID    sql.NullString
-	MetadataJson []byte
-}
-
-func (q *Queries) UpsertPracticeSession(ctx context.Context, arg UpsertPracticeSessionParams) error {
-	_, err := q.db.ExecContext(ctx, upsertPracticeSession,
-		arg.ID,
-		arg.User,
-		arg.UpdatedAt,
-		arg.StartedAt,
-		arg.EndedAt,
-		arg.RoutineID,
 		arg.MetadataJson,
 	)
 	return err

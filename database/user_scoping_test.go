@@ -384,12 +384,11 @@ const (
 	exerciseID     = "exercise-1"
 	routineID      = "routine-1"
 	routineEntryID = "routine-entry-1"
-	sessionID      = "session-1"
-	sessionEntryID = "session-entry-1"
+	recordID       = "record-1"
 )
 
 // seedPractice creates a category, an exercise with a tag and a score entry, a routine with one
-// entry and a session with one entry under the shared ids with content identifying the owner.
+// entry and a practice record under the shared ids with content identifying the owner.
 func seedPractice(t *testing.T, ctx context.Context, q *Queries, user string) {
 	t.Helper()
 	updatedAt := time.Unix(1000, 0)
@@ -454,26 +453,15 @@ func seedPractice(t *testing.T, ctx context.Context, q *Queries, user string) {
 		t.Fatalf("add practice routine entry for %s: %s", user, err)
 	}
 
-	err = q.UpsertPracticeSession(ctx, UpsertPracticeSessionParams{
-		ID:           sessionID,
+	err = q.UpsertPracticeRecord(ctx, UpsertPracticeRecordParams{
+		ID:           recordID,
 		User:         user,
 		UpdatedAt:    updatedAt,
-		StartedAt:    updatedAt,
+		ExerciseID:   user + " record exercise",
 		MetadataJson: []byte(`{}`),
 	})
 	if err != nil {
-		t.Fatalf("upsert practice session for %s: %s", user, err)
-	}
-
-	err = q.AddPracticeSessionEntry(ctx, AddPracticeSessionEntryParams{
-		User:         user,
-		ID:           sessionEntryID,
-		SessionID:    sessionID,
-		ExerciseID:   user + " session exercise",
-		MetadataJson: []byte(`{}`),
-	})
-	if err != nil {
-		t.Fatalf("add practice session entry for %s: %s", user, err)
+		t.Fatalf("upsert practice record for %s: %s", user, err)
 	}
 }
 
@@ -536,12 +524,12 @@ func TestPracticeRowsAreIndependentPerUser(t *testing.T) {
 			t.Errorf("GetPracticeRoutineEntries returned %v for %s", routineEntries, user)
 		}
 
-		sessionEntries, err := q.GetPracticeSessionEntries(ctx, GetPracticeSessionEntriesParams{User: user, SessionID: sessionID})
+		record, err := q.FindPracticeRecord(ctx, FindPracticeRecordParams{User: user, ID: recordID})
 		if err != nil {
-			t.Fatalf("get practice session entries of %s: %s", user, err)
+			t.Fatalf("find practice record of %s: %s", user, err)
 		}
-		if len(sessionEntries) != 1 || sessionEntries[0].ExerciseID != user+" session exercise" {
-			t.Errorf("GetPracticeSessionEntries returned %v for %s", sessionEntries, user)
+		if record.ExerciseID != user+" record exercise" {
+			t.Errorf("FindPracticeRecord returned %v for %s", record, user)
 		}
 	}
 }
@@ -574,13 +562,13 @@ func TestDeletingPracticeRowsLeavesTheOtherUserIntact(t *testing.T) {
 		t.Errorf("DeletePracticeRoutine as %s removed the entries of %s", userA, userB)
 	}
 
-	_, err = q.DeletePracticeSession(ctx, DeletePracticeSessionParams{User: userA, ID: sessionID})
+	_, err = q.DeletePracticeRecord(ctx, DeletePracticeRecordParams{User: userA, ID: recordID})
 	if err != nil {
-		t.Fatalf("delete practice session: %s", err)
+		t.Fatalf("delete practice record: %s", err)
 	}
-	_, err = q.FindPracticeSession(ctx, FindPracticeSessionParams{User: userB, ID: sessionID})
+	_, err = q.FindPracticeRecord(ctx, FindPracticeRecordParams{User: userB, ID: recordID})
 	if err != nil {
-		t.Errorf("DeletePracticeSession as %s removed the session of %s: %s", userA, userB, err)
+		t.Errorf("DeletePracticeRecord as %s removed the record of %s: %s", userA, userB, err)
 	}
 
 	// deleting a tag takes its exercise assignments with it, but only for its owner

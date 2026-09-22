@@ -21,15 +21,15 @@ type DeletedExerciseCategory struct {
 	DeletedAt  time.Time
 }
 
-type DeletedPracticeRoutine struct {
+type DeletedPracticeRecord struct {
 	User      string
-	RoutineID string
+	RecordID  string
 	DeletedAt time.Time
 }
 
-type DeletedPracticeSession struct {
+type DeletedPracticeRoutine struct {
 	User      string
-	SessionID string
+	RoutineID string
 	DeletedAt time.Time
 }
 
@@ -70,6 +70,17 @@ type ExerciseCategory struct {
 	Changed   time.Time
 }
 
+type PracticeRecord struct {
+	User           string
+	ID             string
+	UpdatedAt      time.Time
+	ExerciseID     string
+	RoutineID      sql.NullString
+	RoutineEntryID sql.NullString
+	MetadataJson   []byte
+	Changed        time.Time
+}
+
 type PracticeRoutine struct {
 	User         string
 	ID           string
@@ -86,26 +97,6 @@ type PracticeRoutineEntry struct {
 	Position     int64
 	ExerciseID   string
 	MetadataJson []byte
-}
-
-type PracticeSession struct {
-	User         string
-	ID           string
-	UpdatedAt    time.Time
-	StartedAt    time.Time
-	EndedAt      sql.NullTime
-	RoutineID    sql.NullString
-	MetadataJson []byte
-	Changed      time.Time
-}
-
-type PracticeSessionEntry struct {
-	User           string
-	ID             string
-	SessionID      string
-	ExerciseID     string
-	RoutineEntryID sql.NullString
-	MetadataJson   []byte
 }
 
 type Score struct {

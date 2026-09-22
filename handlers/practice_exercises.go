@@ -231,17 +231,12 @@ func (h *Handler) handleUpdateExercise(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	categoryID := sql.NullString{}
-	if params.CategoryID != nil {
-		categoryID = sql.NullString{String: *params.CategoryID, Valid: true}
-	}
-
 	err = q.UpsertExercise(r.Context(), database.UpsertExerciseParams{
 		ID:           id,
 		User:         user,
 		UpdatedAt:    params.UpdatedAt,
 		Name:         params.Name,
-		CategoryID:   categoryID,
+		CategoryID:   toNullString(params.CategoryID),
 		MetadataJson: params.Metadata,
 	})
 	if err != nil {

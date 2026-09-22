@@ -22,6 +22,13 @@ func nullString(value sql.NullString) *string {
 	return &value.String
 }
 
+func toNullString(value *string) sql.NullString {
+	if value == nil {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: *value, Valid: true}
+}
+
 func nullTime(value sql.NullTime) *time.Time {
 	if !value.Valid {
 		return nil

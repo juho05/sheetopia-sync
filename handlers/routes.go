@@ -61,11 +61,18 @@ func (h *Handler) registerRoutes() {
 		r.Post("/api/practice/routine/{id}", h.handleUpdatePracticeRoutine)
 		r.Delete("/api/practice/routine/{id}", h.handleDeletePracticeRoutine)
 
-		r.Get("/api/practice/session", h.handleGetPracticeSessions)
-		r.Get("/api/practice/session/deleted", h.handleGetDeletedPracticeSessions)
-		r.Get("/api/practice/session/{id}", h.handleGetPracticeSession)
-		r.Post("/api/practice/session/{id}", h.handleUpdatePracticeSession)
-		r.Delete("/api/practice/session/{id}", h.handleDeletePracticeSession)
+		r.Get("/api/practice/record", h.handleGetPracticeRecords)
+		r.Get("/api/practice/record/deleted", h.handleGetDeletedPracticeRecords)
+		r.Get("/api/practice/record/{id}", h.handleGetPracticeRecord)
+		r.Post("/api/practice/record/{id}", h.handleUpdatePracticeRecord)
+		r.Delete("/api/practice/record/{id}", h.handleDeletePracticeRecord)
+
+		// session build compat, remove later
+		r.Get("/api/practice/session", h.handleGetPracticeSessionsCompat)
+		r.Get("/api/practice/session/deleted", h.handleGetDeletedPracticeSessionsCompat)
+		r.Get("/api/practice/session/{id}", h.handlePracticeSessionNotFoundCompat)
+		r.Post("/api/practice/session/{id}", h.handleUpdatePracticeSessionCompat)
+		r.Delete("/api/practice/session/{id}", h.handlePracticeSessionNotFoundCompat)
 	})
 }
 
