@@ -4,7 +4,7 @@ SELECT * FROM setlists WHERE user = ? AND id = ?;
 -- name: FindSetlistsChangedAfterWithScoreIds :many
 SELECT setlists.*, setlist_entries.score_id FROM setlists
 LEFT JOIN setlist_entries ON setlists.user = setlist_entries.user AND setlists.id = setlist_entries.setlist_id
-WHERE setlists.user = ? AND changed > ? ORDER BY setlists.id, setlist_entries.position;
+WHERE setlists.user = ? AND changed >= ? ORDER BY setlists.id, setlist_entries.position;
 
 -- name: UpsertSetlist :exec
 INSERT INTO setlists (id, user, updated_at, name, changed) VALUES (?, ?, ?, ?, unixepoch())
@@ -17,7 +17,7 @@ DELETE FROM setlists WHERE user = ? AND id = ?;
 SELECT * FROM deleted_setlists WHERE user = ? AND setlist_id = ?;
 
 -- name: FindDeletedSetlistsSince :many
-SELECT setlist_id, deleted_at FROM deleted_setlists WHERE user = ? AND deleted_at > ?;
+SELECT setlist_id, deleted_at FROM deleted_setlists WHERE user = ? AND deleted_at >= ?;
 
 -- name: CreateDeletedSetlistMarker :exec
 INSERT INTO deleted_setlists (setlist_id, user, deleted_at) VALUES (?, ?, unixepoch());

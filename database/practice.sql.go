@@ -237,7 +237,7 @@ func (q *Queries) DeletePracticeRoutine(ctx context.Context, arg DeletePracticeR
 }
 
 const findDeletedExerciseCategoriesSince = `-- name: FindDeletedExerciseCategoriesSince :many
-SELECT category_id, deleted_at FROM deleted_exercise_categories WHERE user = ? AND deleted_at > ?
+SELECT category_id, deleted_at FROM deleted_exercise_categories WHERE user = ? AND deleted_at >= ?
 `
 
 type FindDeletedExerciseCategoriesSinceParams struct {
@@ -306,7 +306,7 @@ func (q *Queries) FindDeletedExerciseMarker(ctx context.Context, arg FindDeleted
 }
 
 const findDeletedExercisesSince = `-- name: FindDeletedExercisesSince :many
-SELECT exercise_id, deleted_at FROM deleted_exercises WHERE user = ? AND deleted_at > ?
+SELECT exercise_id, deleted_at FROM deleted_exercises WHERE user = ? AND deleted_at >= ?
 `
 
 type FindDeletedExercisesSinceParams struct {
@@ -359,7 +359,7 @@ func (q *Queries) FindDeletedPracticeRecordMarker(ctx context.Context, arg FindD
 }
 
 const findDeletedPracticeRecordsSince = `-- name: FindDeletedPracticeRecordsSince :many
-SELECT record_id, deleted_at FROM deleted_practice_records WHERE user = ? AND deleted_at > ?
+SELECT record_id, deleted_at FROM deleted_practice_records WHERE user = ? AND deleted_at >= ?
 `
 
 type FindDeletedPracticeRecordsSinceParams struct {
@@ -412,7 +412,7 @@ func (q *Queries) FindDeletedPracticeRoutineMarker(ctx context.Context, arg Find
 }
 
 const findDeletedPracticeRoutinesSince = `-- name: FindDeletedPracticeRoutinesSince :many
-SELECT routine_id, deleted_at FROM deleted_practice_routines WHERE user = ? AND deleted_at > ?
+SELECT routine_id, deleted_at FROM deleted_practice_routines WHERE user = ? AND deleted_at >= ?
 `
 
 type FindDeletedPracticeRoutinesSinceParams struct {
@@ -473,7 +473,7 @@ func (q *Queries) FindExercise(ctx context.Context, arg FindExerciseParams) (Exe
 }
 
 const findExerciseCategoriesChangedAfter = `-- name: FindExerciseCategoriesChangedAfter :many
-SELECT user, id, updated_at, name, position, changed FROM exercise_categories WHERE user = ? AND changed > ? ORDER BY id
+SELECT user, id, updated_at, name, position, changed FROM exercise_categories WHERE user = ? AND changed >= ? ORDER BY id
 `
 
 type FindExerciseCategoriesChangedAfterParams struct {
@@ -537,7 +537,7 @@ func (q *Queries) FindExerciseCategory(ctx context.Context, arg FindExerciseCate
 const findExerciseScoreIDsChangedAfter = `-- name: FindExerciseScoreIDsChangedAfter :many
 SELECT exercise_scores.exercise_id, exercise_scores.score_id FROM exercise_scores
 JOIN exercises ON exercises.user = exercise_scores.user AND exercises.id = exercise_scores.exercise_id
-WHERE exercises.user = ? AND exercises.changed > ? ORDER BY exercise_scores.position
+WHERE exercises.user = ? AND exercises.changed >= ? ORDER BY exercise_scores.position
 `
 
 type FindExerciseScoreIDsChangedAfterParams struct {
@@ -576,7 +576,7 @@ func (q *Queries) FindExerciseScoreIDsChangedAfter(ctx context.Context, arg Find
 const findExerciseTagIDsChangedAfter = `-- name: FindExerciseTagIDsChangedAfter :many
 SELECT exercise_tags.exercise_id, exercise_tags.tag_id FROM exercise_tags
 JOIN exercises ON exercises.user = exercise_tags.user AND exercises.id = exercise_tags.exercise_id
-WHERE exercises.user = ? AND exercises.changed > ?
+WHERE exercises.user = ? AND exercises.changed >= ?
 `
 
 type FindExerciseTagIDsChangedAfterParams struct {
@@ -613,7 +613,7 @@ func (q *Queries) FindExerciseTagIDsChangedAfter(ctx context.Context, arg FindEx
 }
 
 const findExercisesChangedAfter = `-- name: FindExercisesChangedAfter :many
-SELECT user, id, updated_at, name, category_id, metadata_json, changed FROM exercises WHERE user = ? AND changed > ? ORDER BY id
+SELECT user, id, updated_at, name, category_id, metadata_json, changed FROM exercises WHERE user = ? AND changed >= ? ORDER BY id
 `
 
 type FindExercisesChangedAfterParams struct {
@@ -678,7 +678,7 @@ func (q *Queries) FindPracticeRecord(ctx context.Context, arg FindPracticeRecord
 }
 
 const findPracticeRecordsChangedAfter = `-- name: FindPracticeRecordsChangedAfter :many
-SELECT user, id, updated_at, exercise_id, routine_id, routine_entry_id, metadata_json, changed FROM practice_records WHERE user = ? AND changed > ? ORDER BY id
+SELECT user, id, updated_at, exercise_id, routine_id, routine_entry_id, metadata_json, changed FROM practice_records WHERE user = ? AND changed >= ? ORDER BY id
 `
 
 type FindPracticeRecordsChangedAfterParams struct {
@@ -744,7 +744,7 @@ func (q *Queries) FindPracticeRoutine(ctx context.Context, arg FindPracticeRouti
 const findPracticeRoutineEntriesChangedAfter = `-- name: FindPracticeRoutineEntriesChangedAfter :many
 SELECT practice_routine_entries.user, practice_routine_entries.id, practice_routine_entries.routine_id, practice_routine_entries.position, practice_routine_entries.exercise_id, practice_routine_entries.metadata_json FROM practice_routine_entries
 JOIN practice_routines ON practice_routines.user = practice_routine_entries.user AND practice_routines.id = practice_routine_entries.routine_id
-WHERE practice_routines.user = ? AND practice_routines.changed > ? ORDER BY practice_routine_entries.position
+WHERE practice_routines.user = ? AND practice_routines.changed >= ? ORDER BY practice_routine_entries.position
 `
 
 type FindPracticeRoutineEntriesChangedAfterParams struct {
@@ -806,7 +806,7 @@ func (q *Queries) FindPracticeRoutineEntry(ctx context.Context, arg FindPractice
 }
 
 const findPracticeRoutinesChangedAfter = `-- name: FindPracticeRoutinesChangedAfter :many
-SELECT user, id, updated_at, name, metadata_json, changed FROM practice_routines WHERE user = ? AND changed > ? ORDER BY id
+SELECT user, id, updated_at, name, metadata_json, changed FROM practice_routines WHERE user = ? AND changed >= ? ORDER BY id
 `
 
 type FindPracticeRoutinesChangedAfterParams struct {

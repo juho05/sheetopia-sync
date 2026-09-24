@@ -90,7 +90,7 @@ func (q *Queries) FindDeletedSetlistMarker(ctx context.Context, arg FindDeletedS
 }
 
 const findDeletedSetlistsSince = `-- name: FindDeletedSetlistsSince :many
-SELECT setlist_id, deleted_at FROM deleted_setlists WHERE user = ? AND deleted_at > ?
+SELECT setlist_id, deleted_at FROM deleted_setlists WHERE user = ? AND deleted_at >= ?
 `
 
 type FindDeletedSetlistsSinceParams struct {
@@ -151,7 +151,7 @@ func (q *Queries) FindSetlist(ctx context.Context, arg FindSetlistParams) (Setli
 const findSetlistsChangedAfterWithScoreIds = `-- name: FindSetlistsChangedAfterWithScoreIds :many
 SELECT setlists.user, setlists.id, setlists.updated_at, setlists.name, setlists.changed, setlist_entries.score_id FROM setlists
 LEFT JOIN setlist_entries ON setlists.user = setlist_entries.user AND setlists.id = setlist_entries.setlist_id
-WHERE setlists.user = ? AND changed > ? ORDER BY setlists.id, setlist_entries.position
+WHERE setlists.user = ? AND changed >= ? ORDER BY setlists.id, setlist_entries.position
 `
 
 type FindSetlistsChangedAfterWithScoreIdsParams struct {

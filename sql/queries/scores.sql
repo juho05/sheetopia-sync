@@ -7,7 +7,7 @@ SELECT user, id FROM scores;
 -- name: FindScoresChangedAfterWithTagIds :many
 SELECT scores.*, score_tags.tag_id FROM scores
 LEFT JOIN score_tags ON scores.user = score_tags.user AND scores.id = score_tags.score_id
-WHERE scores.user = ? AND changed > ? AND file_type != 'none' ORDER BY scores.id;
+WHERE scores.user = ? AND changed >= ? AND file_type != 'none' ORDER BY scores.id;
 
 -- name: UpsertScore :exec
 INSERT INTO scores (id, user, metadata_updated_at, file_updated_at, file_type, title, metadata_json, type, changed)
@@ -24,7 +24,7 @@ INSERT INTO deleted_scores (score_id, user, deleted_at) VALUES (?, ?, unixepoch(
 SELECT * FROM deleted_scores WHERE user = ? AND score_id = ?;
 
 -- name: FindDeletedScoresSince :many
-SELECT score_id, deleted_at FROM deleted_scores WHERE user = ? AND deleted_at > ?;
+SELECT score_id, deleted_at FROM deleted_scores WHERE user = ? AND deleted_at >= ?;
 
 -- name: DeleteDeletedScoreMarker :exec
 DELETE FROM deleted_scores WHERE user = ? AND score_id = ?;
@@ -39,7 +39,7 @@ INSERT INTO score_tags (user, score_id, tag_id) VALUES (?, ?, ?) ON CONFLICT (us
 SELECT * FROM tags WHERE user = ? AND id = ?;
 
 -- name: FindTagsChangedAfter :many
-SELECT * FROM tags WHERE user = ? AND changed > ?;
+SELECT * FROM tags WHERE user = ? AND changed >= ?;
 
 -- name: UpsertTag :exec
 INSERT INTO tags (id, user, updated_at, name, color, type, changed) VALUES (?, ?, ?, ?, ?, ?, unixepoch())
@@ -52,7 +52,7 @@ DELETE FROM tags WHERE user = ? AND id = ?;
 SELECT * FROM deleted_tags WHERE user = ? AND tag_id = ?;
 
 -- name: FindDeletedTagsSince :many
-SELECT tag_id, deleted_at FROM deleted_tags WHERE user = ? AND deleted_at > ?;
+SELECT tag_id, deleted_at FROM deleted_tags WHERE user = ? AND deleted_at >= ?;
 
 -- name: CreateDeletedTagMarker :exec
 INSERT INTO deleted_tags (tag_id, user, deleted_at) VALUES (?, ?, unixepoch());

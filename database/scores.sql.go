@@ -157,7 +157,7 @@ func (q *Queries) FindDeletedScoreMarker(ctx context.Context, arg FindDeletedSco
 }
 
 const findDeletedScoresSince = `-- name: FindDeletedScoresSince :many
-SELECT score_id, deleted_at FROM deleted_scores WHERE user = ? AND deleted_at > ?
+SELECT score_id, deleted_at FROM deleted_scores WHERE user = ? AND deleted_at >= ?
 `
 
 type FindDeletedScoresSinceParams struct {
@@ -210,7 +210,7 @@ func (q *Queries) FindDeletedTagMarker(ctx context.Context, arg FindDeletedTagMa
 }
 
 const findDeletedTagsSince = `-- name: FindDeletedTagsSince :many
-SELECT tag_id, deleted_at FROM deleted_tags WHERE user = ? AND deleted_at > ?
+SELECT tag_id, deleted_at FROM deleted_tags WHERE user = ? AND deleted_at >= ?
 `
 
 type FindDeletedTagsSinceParams struct {
@@ -275,7 +275,7 @@ func (q *Queries) FindScore(ctx context.Context, arg FindScoreParams) (Score, er
 const findScoresChangedAfterWithTagIds = `-- name: FindScoresChangedAfterWithTagIds :many
 SELECT scores.user, scores.id, scores.metadata_updated_at, scores.file_updated_at, scores.file_type, scores.title, scores.metadata_json, scores.changed, scores.type, score_tags.tag_id FROM scores
 LEFT JOIN score_tags ON scores.user = score_tags.user AND scores.id = score_tags.score_id
-WHERE scores.user = ? AND changed > ? AND file_type != 'none' ORDER BY scores.id
+WHERE scores.user = ? AND changed >= ? AND file_type != 'none' ORDER BY scores.id
 `
 
 type FindScoresChangedAfterWithTagIdsParams struct {
@@ -355,7 +355,7 @@ func (q *Queries) FindTag(ctx context.Context, arg FindTagParams) (Tag, error) {
 }
 
 const findTagsChangedAfter = `-- name: FindTagsChangedAfter :many
-SELECT user, id, updated_at, name, color, changed, type FROM tags WHERE user = ? AND changed > ?
+SELECT user, id, updated_at, name, color, changed, type FROM tags WHERE user = ? AND changed >= ?
 `
 
 type FindTagsChangedAfterParams struct {

@@ -2,7 +2,7 @@
 SELECT * FROM exercise_categories WHERE user = ? AND id = ?;
 
 -- name: FindExerciseCategoriesChangedAfter :many
-SELECT * FROM exercise_categories WHERE user = ? AND changed > ? ORDER BY id;
+SELECT * FROM exercise_categories WHERE user = ? AND changed >= ? ORDER BY id;
 
 -- name: UpsertExerciseCategory :exec
 INSERT INTO exercise_categories (id, user, updated_at, name, position, changed) VALUES (?, ?, ?, ?, ?, unixepoch())
@@ -15,7 +15,7 @@ DELETE FROM exercise_categories WHERE user = ? AND id = ?;
 SELECT * FROM deleted_exercise_categories WHERE user = ? AND category_id = ?;
 
 -- name: FindDeletedExerciseCategoriesSince :many
-SELECT category_id, deleted_at FROM deleted_exercise_categories WHERE user = ? AND deleted_at > ?;
+SELECT category_id, deleted_at FROM deleted_exercise_categories WHERE user = ? AND deleted_at >= ?;
 
 -- name: CreateDeletedExerciseCategoryMarker :exec
 INSERT INTO deleted_exercise_categories (category_id, user, deleted_at) VALUES (?, ?, unixepoch());
@@ -27,7 +27,7 @@ DELETE FROM deleted_exercise_categories WHERE user = ? AND category_id = ?;
 SELECT * FROM exercises WHERE user = ? AND id = ?;
 
 -- name: FindExercisesChangedAfter :many
-SELECT * FROM exercises WHERE user = ? AND changed > ? ORDER BY id;
+SELECT * FROM exercises WHERE user = ? AND changed >= ? ORDER BY id;
 
 -- name: UpsertExercise :exec
 INSERT INTO exercises (id, user, updated_at, name, category_id, metadata_json, changed) VALUES (?, ?, ?, ?, ?, ?, unixepoch())
@@ -40,7 +40,7 @@ DELETE FROM exercises WHERE user = ? AND id = ?;
 SELECT * FROM deleted_exercises WHERE user = ? AND exercise_id = ?;
 
 -- name: FindDeletedExercisesSince :many
-SELECT exercise_id, deleted_at FROM deleted_exercises WHERE user = ? AND deleted_at > ?;
+SELECT exercise_id, deleted_at FROM deleted_exercises WHERE user = ? AND deleted_at >= ?;
 
 -- name: CreateDeletedExerciseMarker :exec
 INSERT INTO deleted_exercises (exercise_id, user, deleted_at) VALUES (?, ?, unixepoch());
@@ -60,7 +60,7 @@ SELECT tag_id FROM exercise_tags WHERE user = ? AND exercise_id = ?;
 -- name: FindExerciseTagIDsChangedAfter :many
 SELECT exercise_tags.exercise_id, exercise_tags.tag_id FROM exercise_tags
 JOIN exercises ON exercises.user = exercise_tags.user AND exercises.id = exercise_tags.exercise_id
-WHERE exercises.user = ? AND exercises.changed > ?;
+WHERE exercises.user = ? AND exercises.changed >= ?;
 
 -- name: RemoveAllExerciseScores :exec
 DELETE FROM exercise_scores WHERE user = ? AND exercise_id = ?;
@@ -74,13 +74,13 @@ SELECT score_id FROM exercise_scores WHERE user = ? AND exercise_id = ? ORDER BY
 -- name: FindExerciseScoreIDsChangedAfter :many
 SELECT exercise_scores.exercise_id, exercise_scores.score_id FROM exercise_scores
 JOIN exercises ON exercises.user = exercise_scores.user AND exercises.id = exercise_scores.exercise_id
-WHERE exercises.user = ? AND exercises.changed > ? ORDER BY exercise_scores.position;
+WHERE exercises.user = ? AND exercises.changed >= ? ORDER BY exercise_scores.position;
 
 -- name: FindPracticeRoutine :one
 SELECT * FROM practice_routines WHERE user = ? AND id = ?;
 
 -- name: FindPracticeRoutinesChangedAfter :many
-SELECT * FROM practice_routines WHERE user = ? AND changed > ? ORDER BY id;
+SELECT * FROM practice_routines WHERE user = ? AND changed >= ? ORDER BY id;
 
 -- name: UpsertPracticeRoutine :exec
 INSERT INTO practice_routines (id, user, updated_at, name, metadata_json, changed) VALUES (?, ?, ?, ?, ?, unixepoch())
@@ -93,7 +93,7 @@ DELETE FROM practice_routines WHERE user = ? AND id = ?;
 SELECT * FROM deleted_practice_routines WHERE user = ? AND routine_id = ?;
 
 -- name: FindDeletedPracticeRoutinesSince :many
-SELECT routine_id, deleted_at FROM deleted_practice_routines WHERE user = ? AND deleted_at > ?;
+SELECT routine_id, deleted_at FROM deleted_practice_routines WHERE user = ? AND deleted_at >= ?;
 
 -- name: CreateDeletedPracticeRoutineMarker :exec
 INSERT INTO deleted_practice_routines (routine_id, user, deleted_at) VALUES (?, ?, unixepoch());
@@ -116,13 +116,13 @@ SELECT * FROM practice_routine_entries WHERE user = ? AND routine_id = ? ORDER B
 -- name: FindPracticeRoutineEntriesChangedAfter :many
 SELECT practice_routine_entries.* FROM practice_routine_entries
 JOIN practice_routines ON practice_routines.user = practice_routine_entries.user AND practice_routines.id = practice_routine_entries.routine_id
-WHERE practice_routines.user = ? AND practice_routines.changed > ? ORDER BY practice_routine_entries.position;
+WHERE practice_routines.user = ? AND practice_routines.changed >= ? ORDER BY practice_routine_entries.position;
 
 -- name: FindPracticeRecord :one
 SELECT * FROM practice_records WHERE user = ? AND id = ?;
 
 -- name: FindPracticeRecordsChangedAfter :many
-SELECT * FROM practice_records WHERE user = ? AND changed > ? ORDER BY id;
+SELECT * FROM practice_records WHERE user = ? AND changed >= ? ORDER BY id;
 
 -- name: UpsertPracticeRecord :exec
 INSERT INTO practice_records (id, user, updated_at, exercise_id, routine_id, routine_entry_id, metadata_json, changed) VALUES (?, ?, ?, ?, ?, ?, ?, unixepoch())
@@ -135,7 +135,7 @@ DELETE FROM practice_records WHERE user = ? AND id = ?;
 SELECT * FROM deleted_practice_records WHERE user = ? AND record_id = ?;
 
 -- name: FindDeletedPracticeRecordsSince :many
-SELECT record_id, deleted_at FROM deleted_practice_records WHERE user = ? AND deleted_at > ?;
+SELECT record_id, deleted_at FROM deleted_practice_records WHERE user = ? AND deleted_at >= ?;
 
 -- name: CreateDeletedPracticeRecordMarker :exec
 INSERT INTO deleted_practice_records (record_id, user, deleted_at) VALUES (?, ?, unixepoch());

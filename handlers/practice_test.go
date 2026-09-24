@@ -476,6 +476,46 @@ func TestChangedAfterOnlyReturnsNewerRows(t *testing.T) {
 	}
 }
 
+// Rows store whole seconds while lastSync has sub-second precision, so a write later in the same
+// second as the last sync must still be returned.
+func TestChangedAfterIncludesRowsOfTheSameSecond(t *testing.T) {
+	ctx, q, h := setupHandler(t)
+
+	w := request(t, h, http.MethodPost, "/api/tag/tag-1", tagRequest{Name: "tag", UpdatedAt: time.Unix(1000, 0)})
+	if w.Code != http.StatusOK {
+		t.Fatalf("upsert returned %d: %s", w.Code, w.Body.String())
+	}
+	tag, err := q.FindTag(ctx, database.FindTagParams{User: testUser, ID: "tag-1"})
+	if err != nil {
+		t.Fatalf("find tag: %s", err)
+	}
+
+	lastSync := tag.Changed.Add(500 * time.Millisecond).UTC().Format(time.RFC3339Nano)
+	w = request(t, h, http.MethodGet, "/api/tag?changedAfter="+lastSync, nil)
+	tags := decodeResponse[struct {
+		Tags []tagResponse `json:"tags"`
+	}](t, w)
+	if len(tags.Tags) != 1 {
+		t.Errorf("get tags returned %d rows for a changedAfter within the same second, want 1", len(tags.Tags))
+	}
+
+	w = request(t, h, http.MethodDelete, "/api/tag/tag-1", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("delete returned %d: %s", w.Code, w.Body.String())
+	}
+	marker, err := q.FindDeletedTagMarker(ctx, database.FindDeletedTagMarkerParams{User: testUser, TagID: "tag-1"})
+	if err != nil {
+		t.Fatalf("find deleted tag marker: %s", err)
+	}
+
+	since := marker.DeletedAt.Add(500 * time.Millisecond).UTC().Format(time.RFC3339Nano)
+	w = request(t, h, http.MethodGet, "/api/tag/deleted?since="+since, nil)
+	deleted := decodeResponse[deletedTagsResponse](t, w)
+	if len(deleted.DeletedTags) != 1 {
+		t.Errorf("deleted tags returned %d rows for a since within the same second, want 1", len(deleted.DeletedTags))
+	}
+}
+
 func TestTagTypeSurvivesAnUpdateFromAClientWithoutTypes(t *testing.T) {
 	_, _, h := setupHandler(t)
 
