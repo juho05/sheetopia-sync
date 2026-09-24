@@ -24,7 +24,7 @@ func autoMigrate(db *sql.DB) error {
 }
 
 func Open(ctx context.Context, filePath string) (db *sql.DB, queries *Queries, err error) {
-	db, err = sql.Open("sqlite", fmt.Sprintf("%s?_pragma=journal_mode=WAL&_pragma=foreign_keys=ON&_pragma=busy_timeout=3000&_time_integer_format=unix&_inttotime=1", filePath))
+	db, err = sql.Open("sqlite", fmt.Sprintf("%s?_pragma=journal_mode=WAL&_pragma=foreign_keys=ON&_pragma=busy_timeout=3000&_txlock=immediate&_time_integer_format=unix&_inttotime=1", filePath))
 	if err != nil {
 		return nil, nil, fmt.Errorf("open sqlite db: %w", err)
 	}
