@@ -8,7 +8,7 @@ Self-hosted sync server for [Sheetopia](https://github.com/juho05/sheetopia).
 
 The recommended installation method for sheetopia-sync is Docker.
 
-To get started create a directory for sheetopia-sync:
+To get started, create a directory for sheetopia-sync:
 ```shell
 mkdir ~/sheetopia-sync
 cd ~/sheetopia-sync
@@ -18,8 +18,8 @@ Next, create a `docker-compose.yml` file in that directory with the following co
 ```yaml
 services:
   sheetopia:
-    # to pin the container to a specific version replace `latest` with a version tag, e.g. `v0.1.0`
-    image: ghcr.io/juho05/sheetopia-sync:latest 
+    # to pin the container to a specific version replace `latest` with a version tag, e.g. `0.3.0` or `0.3`
+    image: ghcr.io/juho05/sheetopia-sync:latest
     restart: unless-stopped
     volumes:
       # The data directory where sheetopia-sync stores the database and score files. To change its location
@@ -36,7 +36,7 @@ Now you can start the container:
 sudo docker compose up -d
 ```
 
-If everything went well you'll be able to access sheetopia-sync on port `8080` of your server. To verify
+If everything went well you'll be able to connect to sheetopia-sync on port `8080` of your server. To verify
 everything is working correctly you can try to contact the `/api/info` endpoint:
 ```shell
 curl "http://localhost:8080/api/info"
@@ -44,7 +44,7 @@ curl "http://localhost:8080/api/info"
 
 A successful response will look similar to this:
 ```json
-{"server":"sheetopia-sync","time":"2026-09-02T11:01:49.419148866Z","serverVersion":"0.3.0","apiVersion":"0.4.0"}
+{"server":"sheetopia-sync","time":"2026-09-27T11:01:49.419148866Z","serverVersion":"0.3.0","apiVersion":"0.5.0"}
 ```
 
 In case something does not work correctly you can view the logs with:
