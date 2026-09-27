@@ -430,31 +430,6 @@ func TestStalePracticeRecordUpdateIsRejected(t *testing.T) {
 	}
 }
 
-func TestPracticeSessionStubsKeepOldAppsSyncing(t *testing.T) {
-	_, _, h := setupHandler(t)
-
-	w := request(t, h, http.MethodGet, "/api/practice/session", nil)
-	if w.Code != http.StatusOK || strings.TrimSpace(w.Body.String()) != `{"sessions":[]}` {
-		t.Errorf("get sessions returned %d: %s", w.Code, w.Body.String())
-	}
-	w = request(t, h, http.MethodGet, "/api/practice/session/deleted", nil)
-	if w.Code != http.StatusOK || strings.TrimSpace(w.Body.String()) != `{"deleted":[]}` {
-		t.Errorf("get deleted sessions returned %d: %s", w.Code, w.Body.String())
-	}
-	w = request(t, h, http.MethodPost, "/api/practice/session/session-1", map[string]any{"startedAt": time.Now()})
-	if w.Code != http.StatusOK {
-		t.Errorf("post session returned %d: %s", w.Code, w.Body.String())
-	}
-	w = request(t, h, http.MethodGet, "/api/practice/session/session-1", nil)
-	if w.Code != http.StatusNotFound {
-		t.Errorf("get session returned %d, want 404", w.Code)
-	}
-	w = request(t, h, http.MethodDelete, "/api/practice/session/session-1", nil)
-	if w.Code != http.StatusNotFound {
-		t.Errorf("delete session returned %d, want 404", w.Code)
-	}
-}
-
 func TestChangedAfterOnlyReturnsNewerRows(t *testing.T) {
 	_, _, h := setupHandler(t)
 

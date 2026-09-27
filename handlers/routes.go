@@ -66,13 +66,6 @@ func (h *Handler) registerRoutes() {
 		r.Get("/api/practice/record/{id}", h.handleGetPracticeRecord)
 		r.Post("/api/practice/record/{id}", h.handleUpdatePracticeRecord)
 		r.Delete("/api/practice/record/{id}", h.handleDeletePracticeRecord)
-
-		// session build compat, remove later
-		r.Get("/api/practice/session", h.handleGetPracticeSessionsCompat)
-		r.Get("/api/practice/session/deleted", h.handleGetDeletedPracticeSessionsCompat)
-		r.Get("/api/practice/session/{id}", h.handlePracticeSessionNotFoundCompat)
-		r.Post("/api/practice/session/{id}", h.handleUpdatePracticeSessionCompat)
-		r.Delete("/api/practice/session/{id}", h.handlePracticeSessionNotFoundCompat)
 	})
 }
 
