@@ -1,0 +1,9 @@
+.git
+.github
+data
+bruno
+.idea
+**/*.md
+*.iml
+Dockerfile
+.dockerignore
