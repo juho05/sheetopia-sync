@@ -71,8 +71,25 @@ func VerifyPassword(expectedHash string, providedPassword string) (bool, error) 
 	return subtle.ConstantTimeCompare(hash, providedHash) == 1, nil
 }
 
-func HashAuthKey(authKey string) string {
-	hash := pbkdf2.Key([]byte(authKey), []byte("constant-salt"), 10000, 256, sha256.New)
+type HashAlg string
+
+const (
+	HashAlg_SHA256             HashAlg = "sha256"
+	HashAlgPBKDF2_SHA256_10000 HashAlg = "pbkdf2-sha256_10000"
+	HashAlg_DEFAULT                    = HashAlg_SHA256
+)
+
+func HashAuthKey(authKey string, alg HashAlg) string {
+	var hash []byte
+	switch alg {
+	case HashAlg_SHA256:
+		h := sha256.Sum256([]byte(authKey))
+		hash = h[:]
+	case HashAlgPBKDF2_SHA256_10000:
+		hash = pbkdf2.Key([]byte(authKey), []byte("constant-salt"), 10000, 256, sha256.New)
+	default:
+		panic("unknown hash algorithm")
+	}
 	return base64.RawStdEncoding.EncodeToString(hash)
 }
 

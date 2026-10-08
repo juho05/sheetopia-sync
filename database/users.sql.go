@@ -11,16 +11,17 @@ import (
 )
 
 const createAuthKey = `-- name: CreateAuthKey :exec
-INSERT INTO auth_keys (key_hash, user) VALUES (?, ?)
+INSERT INTO auth_keys (key_hash, hash_alg, user) VALUES (?, ?, ?)
 `
 
 type CreateAuthKeyParams struct {
 	KeyHash string
+	HashAlg string
 	User    string
 }
 
 func (q *Queries) CreateAuthKey(ctx context.Context, arg CreateAuthKeyParams) error {
-	_, err := q.db.ExecContext(ctx, createAuthKey, arg.KeyHash, arg.User)
+	_, err := q.db.ExecContext(ctx, createAuthKey, arg.KeyHash, arg.HashAlg, arg.User)
 	return err
 }
 
@@ -39,11 +40,16 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 }
 
 const deleteAuthKey = `-- name: DeleteAuthKey :exec
-DELETE FROM auth_keys WHERE auth_keys.key_hash = ?
+DELETE FROM auth_keys WHERE auth_keys.key_hash = ? AND hash_alg = ?
 `
 
-func (q *Queries) DeleteAuthKey(ctx context.Context, keyHash string) error {
-	_, err := q.db.ExecContext(ctx, deleteAuthKey, keyHash)
+type DeleteAuthKeyParams struct {
+	KeyHash string
+	HashAlg string
+}
+
+func (q *Queries) DeleteAuthKey(ctx context.Context, arg DeleteAuthKeyParams) error {
+	_, err := q.db.ExecContext(ctx, deleteAuthKey, arg.KeyHash, arg.HashAlg)
 	return err
 }
 
@@ -93,6 +99,28 @@ func (q *Queries) FindUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const migrateAuthKey = `-- name: MigrateAuthKey :exec
+UPDATE auth_keys SET key_hash = ?1, hash_alg = ?2
+WHERE key_hash = ?3 AND hash_alg = ?4
+`
+
+type MigrateAuthKeyParams struct {
+	NewKeyHash string
+	NewHashAlg string
+	OldKeyHash string
+	OldHashAlg string
+}
+
+func (q *Queries) MigrateAuthKey(ctx context.Context, arg MigrateAuthKeyParams) error {
+	_, err := q.db.ExecContext(ctx, migrateAuthKey,
+		arg.NewKeyHash,
+		arg.NewHashAlg,
+		arg.OldKeyHash,
+		arg.OldHashAlg,
+	)
+	return err
+}
+
 const updateUserName = `-- name: UpdateUserName :execresult
 UPDATE users SET name = ? WHERE name = ?
 `
@@ -120,11 +148,16 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 }
 
 const verifyAuthKey = `-- name: VerifyAuthKey :one
-UPDATE auth_keys SET last_used = unixepoch() WHERE key_hash = ? RETURNING user
+UPDATE auth_keys SET last_used = unixepoch() WHERE key_hash = ? AND hash_alg = ? RETURNING user
 `
 
-func (q *Queries) VerifyAuthKey(ctx context.Context, keyHash string) (string, error) {
-	row := q.db.QueryRowContext(ctx, verifyAuthKey, keyHash)
+type VerifyAuthKeyParams struct {
+	KeyHash string
+	HashAlg string
+}
+
+func (q *Queries) VerifyAuthKey(ctx context.Context, arg VerifyAuthKeyParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, verifyAuthKey, arg.KeyHash, arg.HashAlg)
 	var user string
 	err := row.Scan(&user)
 	return user, err

@@ -40,7 +40,8 @@ func setupHandler(t *testing.T) (context.Context, *database.Queries, *Handler) {
 		t.Fatalf("create user: %s", err)
 	}
 	err = queries.CreateAuthKey(ctx, database.CreateAuthKeyParams{
-		KeyHash: database.HashAuthKey(testAuthKey),
+		KeyHash: database.HashAuthKey(testAuthKey, database.HashAlg_DEFAULT),
+		HashAlg: string(database.HashAlg_DEFAULT),
 		User:    testUser,
 	})
 	if err != nil {

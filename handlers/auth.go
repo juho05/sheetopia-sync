@@ -47,7 +47,8 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.Queries.CreateAuthKey(r.Context(), database.CreateAuthKeyParams{
-		KeyHash: database.HashAuthKey(authKey),
+		KeyHash: database.HashAuthKey(authKey, database.HashAlg_DEFAULT),
+		HashAlg: string(database.HashAlg_DEFAULT),
 		User:    user.Name,
 	})
 	if err != nil {
@@ -66,7 +67,11 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 // POST /api/logout
 func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 	authKey := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-	err := h.Queries.DeleteAuthKey(r.Context(), database.HashAuthKey(authKey))
+	// hash alg was already converted to default one by auth middleware at this point
+	err := h.Queries.DeleteAuthKey(r.Context(), database.DeleteAuthKeyParams{
+		KeyHash: database.HashAuthKey(authKey, database.HashAlg_DEFAULT),
+		HashAlg: string(database.HashAlg_DEFAULT),
+	})
 	if err != nil {
 		respondInternalServerError(w, err)
 		return
